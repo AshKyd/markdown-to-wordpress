@@ -35,9 +35,9 @@ function template({ posts, baseurl }) {
         <wp:base_blog_url>https://example.org/</wp:base_blog_url>
     
         <wp:author><wp:author_id>1</wp:author_id>
-        <wp:author_login><![CDATA[ash]]></wp:author_login>
-        <wp:author_email><![CDATA[ash@kyd.com.au]]></wp:author_email>
-        <wp:author_display_name><![CDATA[ash]]></wp:author_display_name>
+        <wp:author_login><![CDATA[importer]]></wp:author_login>
+        <wp:author_email><![CDATA[importer@example.org]]></wp:author_email>
+        <wp:author_display_name><![CDATA[importer]]></wp:author_display_name>
         <wp:author_first_name><![CDATA[]]></wp:author_first_name>
         <wp:author_last_name><![CDATA[]]></wp:author_last_name></wp:author>
     
@@ -60,14 +60,14 @@ function template({ posts, baseurl }) {
             <title><![CDATA[${post.title}]]></title>
             <link>https://example.org/</link>
             <pubDate>${post.date.toUTCString()}</pubDate>
-            <dc:creator><![CDATA[${post.author}]]></dc:creator>
-            <guid isPermaLink="false">https://${baseurl}/?p=${i}</guid>
+            <dc:creator><![CDATA[${post.author || ""}]]></dc:creator>
+            <guid isPermaLink="false">https://example.org/?p=${i}</guid>
             <description></description>
             <content:encoded><![CDATA[${marked(
               (post.image ? `![](${post.image})` : "") + post.content
             )}]]></content:encoded>
             <excerpt:encoded><![CDATA[${
-              post.excerpt || post.description
+              post.excerpt || post.description || ""
             }]]></excerpt:encoded>
             <wp:post_id>${i}</wp:post_id>
             <wp:post_date><![CDATA[${post.date
@@ -120,11 +120,27 @@ function template({ posts, baseurl }) {
     </rss>`;
 }
 
+function parseMatter(contentString) {
+  // Some weird jsonlike format Hexo uses but gray matter doesn't parse
+  if (contentString.includes(";;;")) {
+    const [head, content] = contentString.split(";;;");
+    let data;
+    try {
+      data = JSON.parse(`{${head}}`);
+    } catch (e) {
+      throw new Error("Could not parse head");
+    }
+    return { data, content };
+  }
+
+  return matter(contentString);
+}
+
 module.exports = function markdownToWordpress({ fileArray }) {
   const categories = {};
 
   const posts = fileArray.map(({ path, slug, content }) => {
-    const parsed = matter(content);
+    const parsed = parseMatter(content);
 
     let date = parsed.data.date ? new Date(parsed.data.date) : new Date();
     let updated = parsed.data.updated ? new Date(parsed.data.updated) : date;

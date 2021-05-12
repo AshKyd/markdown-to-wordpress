@@ -18,8 +18,6 @@ program
     "file to put Wordpress XML. Defaults to wordpress-import.xml"
   );
 
-console.log(process.argv);
-
 program.parse(process.argv);
 const options = program.opts();
 
